@@ -1,5 +1,8 @@
-// PANIC MODE - Fake Google Sign In → Password → Google Classroom
+// CSP-Safe Panic Mode for GitHub Pages
+// Shift + Tab = Fake Google Sign In → Password → Classroom
+
 let panicActive = false;
+let panicScreen = null;
 
 document.addEventListener('keydown', function(e) {
     if (e.shiftKey && e.key === 'Tab') {
@@ -8,114 +11,112 @@ document.addEventListener('keydown', function(e) {
         if (panicActive) {
             closePanic();
         } else {
-            startPanic();
+            showEmailScreen();
         }
     }
 });
 
-function startPanic() {
+function showEmailScreen() {
     panicActive = true;
 
-    const html = `
-        <div id="panic-screen" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f8f9fa; z-index:9999999; font-family:Arial,sans-serif; margin:0; padding:0; overflow:auto;">
+    panicScreen = document.createElement('div');
+    panicScreen.id = 'panic-screen';
+    panicScreen.style.cssText = `position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f8f9fa; z-index:9999999; font-family:Arial,sans-serif; overflow:auto; margin:0; padding:0;`;
+
+    panicScreen.innerHTML = `
+        <div style="max-width:460px; margin:120px auto; background:#fff; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.2); padding:40px;">
+            <div style="text-align:center;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/512px-Google_2015_logo.svg.png" style="height:70px;">
+                <h1 style="margin:25px 0 10px; font-size:28px; color:#202124;">Sign in</h1>
+                <p style="color:#202124; font-size:16px;">Use your Google Account</p>
+            </div>
             
-            <!-- Email Screen -->
-            <div style="max-width:460px; margin:120px auto 0; background:#fff; border-radius:8px; box-shadow:0 2px 15px rgba(0,0,0,0.15); padding:40px 40px 36px;">
-                <div style="text-align:center;">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/512px-Google_2015_logo.svg.png" style="height:72px;">
-                    <h1 style="font-size:28px; font-weight:400; margin:24px 0 8px; color:#202124;">Sign in</h1>
-                    <p style="color:#202124; font-size:16px;">Use your Google Account</p>
-                </div>
-
-                <input type="text" id="fake-email" placeholder="Email or phone" 
-                       style="width:100%; height:56px; padding:0 16px; margin:24px 0; font-size:16px; border:1px solid #dadce0; border-radius:4px; outline:none;">
-
-                <button onclick="goToPassword()" 
-                        style="width:100%; height:48px; background:#1a73e8; color:white; border:none; border-radius:4px; font-size:15px; font-weight:500; cursor:pointer;">
-                    Next
-                </button>
-            </div>
-
-            <div style="text-align:center; margin-top:50px; color:#666; font-size:14px;">
-                Press <strong>Shift + Tab</strong> to return to Homework Planet
-            </div>
+            <input type="text" id="fake-email" placeholder="Email or phone" 
+                   style="width:100%; padding:16px; margin:25px 0; font-size:16px; border:1px solid #dadce0; border-radius:4px;">
+            
+            <button id="next-btn" 
+                    style="width:100%; padding:14px; background:#1a73e8; color:white; border:none; border-radius:4px; font-size:16px; cursor:pointer;">
+                Next
+            </button>
+        </div>
+        
+        <div style="text-align:center; margin-top:60px; color:#666; font-size:14px;">
+            Press Shift + Tab to return
         </div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', html);
+    document.body.appendChild(panicScreen);
     document.body.style.display = 'none';
     document.title = "Sign in - Google Accounts";
 
+    // Add click listener safely
     setTimeout(() => {
-        document.getElementById('fake-email').focus();
-    }, 50);
+        const nextBtn = document.getElementById('next-btn');
+        const emailInput = document.getElementById('fake-email');
+        if (nextBtn) nextBtn.addEventListener('click', goToPassword);
+        if (emailInput) emailInput.focus();
+    }, 100);
 }
 
-window.goToPassword = function() {
-    const emailInput = document.getElementById('fake-email').value.trim();
-    const screen = document.getElementById('panic-screen');
+function goToPassword() {
+    if (!panicScreen) return;
 
-    screen.innerHTML = `
-        <div style="max-width:460px; margin:120px auto 0; background:#fff; border-radius:8px; box-shadow:0 2px 15px rgba(0,0,0,0.15); padding:40px 40px 36px;">
+    const email = document.getElementById('fake-email').value.trim() || "student@gmail.com";
+
+    panicScreen.innerHTML = `
+        <div style="max-width:460px; margin:120px auto; background:#fff; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.2); padding:40px;">
             <div style="text-align:center;">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/512px-Google_2015_logo.svg.png" style="height:72px;">
-                <h1 style="font-size:24px; font-weight:400; margin:20px 0 8px; color:#202124;">Welcome</h1>
-                <p style="color:#202124; font-size:15px;">${emailInput || 'test@gmail.com'}</p>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/512px-Google_2015_logo.svg.png" style="height:70px;">
+                <h1 style="margin:20px 0 8px; font-size:24px; color:#202124;">Welcome</h1>
+                <p style="color:#202124;">${email}</p>
             </div>
-
-            <input type="password" id="fake-password" placeholder="Password" 
-                   style="width:100%; height:56px; padding:0 16px; margin:24px 0; font-size:16px; border:1px solid #dadce0; border-radius:4px; outline:none;">
-
-            <button onclick="showClassroom()" 
-                    style="width:100%; height:48px; background:#1a73e8; color:white; border:none; border-radius:4px; font-size:15px; font-weight:500; cursor:pointer;">
+            
+            <input type="password" placeholder="Password" 
+                   style="width:100%; padding:16px; margin:25px 0; font-size:16px; border:1px solid #dadce0; border-radius:4px;">
+            
+            <button id="signin-btn" 
+                    style="width:100%; padding:14px; background:#1a73e8; color:white; border:none; border-radius:4px; font-size:16px; cursor:pointer;">
                 Sign in
             </button>
         </div>
-
-        <div style="text-align:center; margin-top:50px; color:#666; font-size:14px;">
-            Press <strong>Shift + Tab</strong> to return to Homework Planet
+        
+        <div style="text-align:center; margin-top:60px; color:#666; font-size:14px;">
+            Press Shift + Tab to return
         </div>
     `;
 
-    document.title = "Password - Google Accounts";
-};
+    // Add listener for sign in button
+    setTimeout(() => {
+        const signinBtn = document.getElementById('signin-btn');
+        if (signinBtn) signinBtn.addEventListener('click', showClassroom);
+    }, 100);
+}
 
-window.showClassroom = function() {
-    const screen = document.getElementById('panic-screen');
+function showClassroom() {
+    if (!panicScreen) return;
+
     document.title = "Google Classroom";
 
-    screen.innerHTML = `
-        <div style="background:#4285f4; color:white; padding:16px 24px; font-size:22px; display:flex; align-items:center; gap:12px;">
-            <img src="https://ssl.gstatic.com/classroom/favicon.ico" style="height:32px;">
+    panicScreen.innerHTML = `
+        <div style="background:#4285f4; color:white; padding:20px; font-size:22px; display:flex; align-items:center; gap:12px;">
+            <img src="https://ssl.gstatic.com/classroom/favicon.ico" style="height:32px;"> 
             Google Classroom
         </div>
-        <div style="padding:30px; color:#333;">
-            <h2 style="margin-bottom:20px;">Your Classes</h2>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
-                <div style="background:#f1f3f4; padding:16px; border-radius:8px;">
-                    <h3 style="margin:0 0 6px 0; color:#1a73e8;">Math 9 • Period 2</h3>
-                    <p style="margin:0; color:#555; font-size:14px;">Mrs. Thompson • Quiz tomorrow</p>
-                </div>
-                <div style="background:#f1f3f4; padding:16px; border-radius:8px;">
-                    <h3 style="margin:0 0 6px 0; color:#1a73e8;">Science 9 • Period 3</h3>
-                    <p style="margin:0; color:#555; font-size:14px;">Mr. Patel • Lab due Friday</p>
-                </div>
-                <div style="background:#f1f3f4; padding:16px; border-radius:8px;">
-                    <h3 style="margin:0 0 6px 0; color:#1a73e8;">English 9 • Period 4</h3>
-                    <p style="margin:0; color:#555; font-size:14px;">Ms. Rivera • Essay due today</p>
-                </div>
+        <div style="padding:40px; color:#333; text-align:center;">
+            <h2>Your Classes</h2>
+            <div style="margin:30px 0; font-size:18px;">
+                Math 9 • Science 9 • English 9
             </div>
-        </div>
-
-        <div style="text-align:center; margin-top:40px; color:#666; font-size:14px;">
-            Press <strong>Shift + Tab</strong> to return to Homework Planet
+            <p style="color:#777;">(This is fake — press Shift + Tab to go back to games)</p>
         </div>
     `;
-};
+}
 
 function closePanic() {
-    const screen = document.getElementById('panic-screen');
-    if (screen) screen.remove();
+    if (panicScreen) {
+        panicScreen.remove();
+        panicScreen = null;
+    }
     document.body.style.display = '';
     document.title = "Homework Planet - Test";
     panicActive = false;
